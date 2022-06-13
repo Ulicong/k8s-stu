@@ -1,0 +1,72 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: http-server
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: http-server
+  template:
+    metadata:
+      labels:
+        app: http-server
+    spec:
+      containers:
+        - name: http-server
+          image: docker.io/stu/http-server:v1.0.0"
+          ports:
+            - containerPort: 32000
+              protocol: TCP
+          readinessProbe:
+            tcpSocket:
+              port: 32000
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          livenessProbe:
+            tcpSocket:
+              port: 32000
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 1
+            successThreshold: 1
+          resources:
+            limits:
+              cpu: "1"
+              memory: "500Mi"
+            requests:
+              cpu: "1"
+              memory: "500Mi"
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: http-server
+  namespace: default
+  labels:
+    app: http-server
+spec:
+  ports:
+    - name: http
+      protocol: TCP
+      port: 32000
+      targetPort: 32000
+      nodePort: 32000
+  selector:
+    app: http-server
+  type: NodePort
+  sessionAffinity: None
